@@ -1,0 +1,63 @@
+# Time Series Forecasting Experiment
+
+## AirPassengers dataset
+
+We will take a look at an Arima model trained on the classic Box & Jenkins airline data. Monthly totals of international airline passengers, 1949 to 1960.
+
+[R-manual](https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/AirPassengers.html)
+
+```{r echo=FALSE}
+library(datasets)
+```
+
+### Load
+
+Let's load the `AirPassengers` dataset
+```{r load data}
+AirPassengers
+```
+Indeed, it contains 12 years of passenger arrival totals.
+
+### Split
+
+Let's split it into 10 years for training and 2 for testing.
+```{r split}
+train = ts(AirPassengers[1:120], start = c(1949, 1), frequency = 12)
+test = ts(AirPassengers[121:(121+24-1)], start = c(1959, 1), frequency = 12)
+```
+
+### Train
+
+Now we fit an Arima model.
+```{r fit}
+(fit <- arima(log10(train), c(0, 1, 1),
+              seasonal = list(order = c(0, 1, 1), period = 12)))
+# update(fit, method = "CSS")
+# update(fit, x = window(log10(train), start = 1954))
+```
+
+### Predict
+
+Predict and calculate confidence interval
+```{r predict}
+pred <- predict(fit, n.ahead = 24)
+tl <- pred$pred - 1.96 * pred$se
+tu <- pred$pred + 1.96 * pred$se
+```
+
+### Plot
+
+Plot to look at actual vs prediction vs it's confidence interval.
+```{r plot}
+ts.plot(train, test, 10^pred$pred, 10^tl, 10^tu, log = "y", lty = c(1, 1, 2, 3, 3))
+```
+
+```{r}
+## Structural Time Series
+# ap <- log10(AirPassengers) - 2
+# (fit <- StructTS(ap, type = "BSM"))
+# par(mfrow = c(1, 2))
+# plot(cbind(ap, fitted(fit)), plot.type = "single")
+# plot(cbind(ap, tsSmooth(fit)), plot.type = "single")
+```
+
